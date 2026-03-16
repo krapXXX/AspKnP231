@@ -124,12 +124,31 @@ namespace AspKnP231.Controllers
             // елемент форми, що відповідає за кнопку надсилання форми.
 
             HomeModelsViewModel viewModel = new();
-            if(formModel.UserButton != null)
+            if (HttpContext.Session.Keys.Contains("HomeModelsData"))
             {
-                viewModel.FormModel = formModel;
+                viewModel.FormModel = JsonSerializer.Deserialize<HomeModelsFormModel>(
+                    HttpContext.Session.GetString("HomeModelsData")!
+                );
+                HttpContext.Session.Remove("HomeModelsData");
             }
 
             return View(viewModel);
+        }
+
+        [HttpPost]
+        public IActionResult ModelsPost(HomeModelsFormModel formModel)
+        {
+            // Якщо була натиснута кнопка
+            if (formModel.UserButton != null)
+            {
+                HttpContext.Session.SetString(
+                    "HomeModelsData",
+                    JsonSerializer.Serialize(formModel)
+                );
+            }
+
+            // Редирект на GET метод Models
+            return RedirectToAction(nameof(Models));
         }
         /* Д.З. Зробити сторінку з формою реєстрації нового користувача
          * Описати усі необхідні моделі

@@ -1,5 +1,11 @@
 ﻿@{
     ViewData["Title"] = "Middleware";
+    long middlewareTicks = (long)(Context.Items["MiddlewareStartTime"] ?? 0L);
+    long controllerTicks = (long)(Context.Items["ControllerTime"] ?? 0L);
+    long viewTicks = DateTime.Now.Ticks;
+
+    long diffToController = (controllerTicks - middlewareTicks) / 10;
+    long diffToView = (viewTicks - controllerTicks) / 10;
 }
 
 <div class="text-center">
@@ -43,9 +49,39 @@
 </p>
 Хеш-код сервіса, переданого у Middleware: @Context.Items["FromDemoMiddleware"]
 
+<div class="mt-4">
+    <h3>Дослідження часу оброблення запиту</h3>
+    <table class="table table-bordered text-center">
+        <thead class="table">
+            <tr>
+                <th>Етап обробки</th>
+                <th>Мітка часу (Ticks)</th>
+                <th>Затримка (Delta)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Middleware</strong></td>
+                <td>@middlewareTicks</td>
+                <td>—</td>
+            </tr>
+            <tr>
+                <td><strong>Controller</strong></td>
+                <td>@controllerTicks</td>
+                <td class="text">+ @diffToController мкс</td>
+            </tr>
+            <tr>
+                <td><strong>View (Razor)</strong></td>
+                <td>@viewTicks</td>
+                <td class="text">+ @diffToView мкс</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
 <p class="text-muted">
     <i>У матеріалах використано документацію 
         <a href="https://learn.microsoft.com/en-us/aspnet/core/fundamentals/middleware/">Middleware</a>    
         <a href="https://learn.microsoft.com/en-us/aspnet/core/fundamentals/middleware/write">Custom Middleware</a>
     </i>
 </p>
+

@@ -34,5 +34,22 @@ namespace AspKnP231.Middleware.Demo
 
             // Логіка "зворотнього ходу"
         }
+        public class AnalyticsMiddleware
+        {
+            private readonly RequestDelegate _next;
+
+            public AnalyticsMiddleware(RequestDelegate next)
+            {
+                _next = next;
+            }
+
+            public async Task InvokeAsync(HttpContext context)
+            {
+                // Фіксуємо мітку часу в тиках (1 тик = 100 наносекунд)
+                context.Items["MiddlewareStartTime"] = DateTime.Now.Ticks;
+
+                await _next(context);
+            }
+        }
     }
 }

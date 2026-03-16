@@ -91,6 +91,7 @@ namespace AspKnP231.Controllers
 
         public IActionResult Middleware()
         {
+            HttpContext.Items["ControllerTime"] = DateTime.Now.Ticks;
             return View();
         }
 

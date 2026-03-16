@@ -1,8 +1,9 @@
-using AspKnP231.Services.Hash;
-using AspKnP231.Middleware.Demo;
-using AspKnP231.Services.Scoped;
-using AspKnP231.Services.Kdf;
 using AspKnP231.Data;
+using AspKnP231.Middleware.Demo;
+using AspKnP231.Services.DateTime;
+using AspKnP231.Services.Hash;
+using AspKnP231.Services.Kdf;
+using AspKnP231.Services.Scoped;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,6 +18,7 @@ builder.Services.AddHash();   // замінено на розширення (д�
 builder.Services.AddKdf();
 
 builder.Services.AddScoped<ScopedService>();    // без інтерфейсу - тільки один параметр типу
+builder.Services.AddScoped<IDateTimeService, NationalDateTimeService>();
 
 builder.Services.AddDistributedMemoryCache();          // Налаштування сесій
 builder.Services.AddSession(options =>                 // https://learn.microsoft.com/en-us/aspnet/core/fundamentals/app-state

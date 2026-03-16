@@ -102,7 +102,16 @@ namespace AspKnP231.Controllers
             ViewData["ControllerScopedHash"] = _scopedService.GetHashCode();
             return View();
         }
+        public IActionResult Privacy()
+        {
+            // Створюємо порожній об'єкт моделі, щоб View не отримало null
+            var viewModel = new HomePrivacyViewModel
+            {
+                IsAgreed = false // значення за замовчуванням
+            };
 
+            return View(viewModel);
+        }
         // Зв'язування моделі відбувається коли ми її зазначаємо вхідними параметром Action
         // В старих ASP, якщо модель не є обов'язковою, то необхідно
         // зазначати Nullable (HomeModelsFormModel?)
@@ -140,11 +149,6 @@ namespace AspKnP231.Controllers
         }
         
         public IActionResult Index()
-        {
-            return View();
-        }
-
-        public IActionResult Privacy()
         {
             return View();
         }

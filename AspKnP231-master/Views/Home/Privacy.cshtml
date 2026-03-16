@@ -1,6 +1,70 @@
-﻿@{
-    ViewData["Title"] = "Privacy Policy";
+﻿@model AspKnP231.Models.Home.HomePrivacyViewModel
+
+@{
+    ViewData["Title"] = "Privacy";
 }
 <h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<div class="text-center">
+    <h1 class="display-4"><i class="bi bi-shield-lock display-5"></i> Конфіденційність</h1>
+</div>
+
+<div class="mt-4">
+    <p>
+        Ця сторінка описує підходи до обробки персональних даних у системі ASP.NET.
+        У концепції безпеки, <strong>Privacy</strong> — це не лише захист від сторонніх,
+        а й прозорість використання даних користувача.
+    </p>
+
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i>
+        Ми використовуємо сесії та Cookies для забезпечення коректної роботи автентифікації.
+    </div>
+
+    ### Основні аспекти обробки даних:
+    <ul>
+        <li>
+            <strong>Збір даних:</strong> Ми зберігаємо лише ті дані, які ви явно передаєте через
+            <i>Form Models</i> (наприклад, логін при реєстрації).
+        </li>
+        <li>
+            <strong>Шифрування:</strong> Паролі ніколи не зберігаються у відкритому вигляді — лише у формі хеш-сум.
+        </li>
+        <li>
+            <strong>Cookies:</strong> Використовуються для ідентифікації вашої сесії між запитами до сервера.
+        </li>
+    </ul>
+
+    <hr />
+
+    <p>Ви можете змінити налаштування згоди на обробку даних нижче:</p>
+
+    <form method="post" class="mt-3">
+        <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" id="consentCheck" name="IsAgreed"
+                   @(Model.IsAgreed ? "checked" : "") value="true">
+            <label class="form-check-label" for="consentCheck">
+                Я погоджуюся на обробку моїх персональних даних
+            </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save"></i> Оновити налаштування
+        </button>
+    </form>
+</div>
+
+<div class="mt-4 p-3 border rounded bg-light">
+    @if (!Model.IsAgreed)
+    {
+        <span class="text-danger">
+            <i class="bi bi-exclamatation-triangle"></i> Статус: Згода не надана. Деякі функції можуть бути обмежені.
+        </span>
+    }
+    else
+    {
+        <span class="text-success">
+            <i class="bi bi-check-circle"></i> Статус: Ви надали згоду на обробку даних @DateTime.Now.ToShortDateString().
+        </span>
+    }
+</div>

@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Buffers.Text;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions; // Added for password complexity check
 
 namespace AspKnP231.Controllers
 {
@@ -102,6 +103,24 @@ namespace AspKnP231.Controllers
             {
                 ModelState.AddModelError("user-birthdate", "Вік замалий для реєстрації");
             }
+
+            // --- ПЕРЕВІРКА ПАРОЛЯ НА НАДІЙНІСТЬ ---
+            if (!string.IsNullOrEmpty(formModel.UserPassword))
+            {
+                // 1. Довжина щонайменше 6 символів
+                if (formModel.UserPassword.Length < 6)
+                {
+                    ModelState.AddModelError("user-password", "Пароль має бути не менше 6 символів");
+                }
+                // 2. Містить цифру, малу літеру, велику літеру та спецсимвол
+                // Використовуємо регулярний вираз для перевірки всіх умов одночасно
+                bool isStrong = Regex.IsMatch(formModel.UserPassword, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$");
+                if (!isStrong)
+                {
+                    ModelState.AddModelError("user-password", "Пароль повинен містити цифру, малу та велику літери, а також спецсимвол");
+                }
+            }
+
             // Валідація паролю - ДЗ
             if (formModel.UserPassword != formModel.UserRepeat)
             {
@@ -116,16 +135,24 @@ namespace AspKnP231.Controllers
                 }
             }
 
-            if (ModelState.IsValid && formModel.UserAvatar != null && formModel.UserAvatar.Length > 0)
+            if (formModel.UserAvatar != null && formModel.UserAvatar.Length > 0)
             {
                 /* Д.З. Забезпечити валідацію файлу-аватарки
-                 * на предмет того, що його розширення відповідає
-                 * графічним файлам. Перелік узгодити з вибором MIME 
-                 * типів у контролері Storage.
-                 * Якщо файл має неприпустимий тип, то додавати 
-                 * помилку валідації даного поля та виводити її на формі.
+                 * на предмет того, що його розширення відповідає графічним файлам.
                  */
-                formModel.SavedFilename = _storageService.Save(formModel.UserAvatar);
+                string[] allowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+                string fileExtension = Path.GetExtension(formModel.UserAvatar.FileName).ToLower();
+
+                if (!allowedExtensions.Contains(fileExtension))
+                {
+                    ModelState.AddModelError("user-avatar", "Неприпустимий тип файлу. Дозволені формати: jpg, jpeg, png, gif, webp");
+                }
+
+                // Якщо модель все ще валідна, зберігаємо файл
+                if (ModelState.IsValid)
+                {
+                    formModel.SavedFilename = _storageService.Save(formModel.UserAvatar);
+                }
             }
 
             HttpContext.Session.SetString(
@@ -217,22 +244,22 @@ namespace AspKnP231.Controllers
                 status = 200,
                 data = "OK"
             });
+        }
 
-            /* Авторизація. Збереження результатів автентифікації.
-             * За успішними результатами автентифікації у сесії зберігається
-             * інформація про вхід.
-             * У майбутніх запитах цю інформацію слід відновлювати
-             * та приймати рішення щодо авторизації
-             */
+        [HttpGet]
+        public IActionResult Kdf()
+        {
+            return View(new KdfViewModel());
+        }
+
+        [HttpPost]
+        public IActionResult Kdf(KdfViewModel model)
+        {
+            if (!string.IsNullOrEmpty(model.Password) && !string.IsNullOrEmpty(model.Salt))
+            {
+                model.DerivedKey = _kdfService.Dk(model.Salt, model.Password);
+            }
+            return View(model);
         }
     }
 }
-/* Д.З. Реалізувати стилізацію посилання переходу на 
- * сторінку профілю користувача в залежності від 
- * наявності/відсутності картинки-аватарки.
- * Додати підтвердження виходу з авторизованого 
- * режиму окремим модальним діалогом
- * [Ви виходите з системи
- *  Підтвержуєте
- *  Так   Ні      ]
- */

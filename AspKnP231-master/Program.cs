@@ -1,9 +1,11 @@
 using AspKnP231.Data;
+using AspKnP231.Middleware.Auth.Session;
 using AspKnP231.Middleware.Demo;
 using AspKnP231.Services.DateTime;
 using AspKnP231.Services.Hash;
 using AspKnP231.Services.Kdf;
 using AspKnP231.Services.Scoped;
+using AspKnP231.Services.Storage;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,6 +18,7 @@ builder.Services.AddControllersWithViews();
 // builder.Services.AddSingleton<IHashService, Md5HashService>();
 builder.Services.AddHash();   // замінено на розширення (див. HashExtension)
 builder.Services.AddKdf();
+builder.Services.AddStorage();
 
 builder.Services.AddScoped<ScopedService>();    // без інтерфейсу - тільки один параметр типу
 builder.Services.AddScoped<IDateTimeService, NationalDateTimeService>();
@@ -23,7 +26,7 @@ builder.Services.AddScoped<IDateTimeService, NationalDateTimeService>();
 builder.Services.AddDistributedMemoryCache();          // Налаштування сесій
 builder.Services.AddSession(options =>                 // https://learn.microsoft.com/en-us/aspnet/core/fundamentals/app-state
 {                                                      // 
-    options.IdleTimeout = TimeSpan.FromSeconds(10);    // 
+    options.IdleTimeout = TimeSpan.FromMinutes(10);    // 
     options.Cookie.HttpOnly = true;                    // 
     options.Cookie.IsEssential = true;                 // 
 });                                                    // 
@@ -34,7 +37,11 @@ builder.Services.AddDbContext<DataContext>(options =>
         builder.Configuration.GetConnectionString("MainDb")));
 
 var app = builder.Build();
-
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+    db.Database.Migrate();
+}
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -53,6 +60,7 @@ app.UseSession();       // Включення сесій https://learn.microsoft
 // тому порядок важливо дотримуватись, якщо один обробник залежить від інших
 // (на відміну від сервісів, порядок додавання яких не грає ролі)
 app.UseDemo();
+app.UseAuthSession();
 
 
 app.MapControllerRoute(

@@ -58,6 +58,9 @@
                         <li class="nav-item" title="Робота з формами">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Forms"><i class="bi bi-card-checklist header-icon"></i></a>
                         </li>
+                        <li class="nav-item" title="Крамниця">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Shop" asp-action="Index"><i class="bi bi-bag-check header-icon"></i></a>
+                        </li>
                     </ul>
 
                     @if (isAuthorized)
@@ -75,7 +78,9 @@
                                     <img src="/Storage/Item/@userAvatar" alt="Ava" style="max-width: 30px; max-height: 30px" />
                                 }
                             </a>
-
+                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#logoutModal">
+                                <i class="bi bi-box-arrow-right"></i>
+                            </button>
                             <a href="?logout"
                                title="Вихід з авторизованого режиму"
                                class="btn btn-outline-secondary"><i class="bi bi-box-arrow-right"></i></a>
@@ -136,17 +141,73 @@
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
-                    <button form="auth-form" type="submit" class="btn btn-primary">Вхід</button>
+                <div class="modal-footer d-flex justify-content-between align-items-center">
+                    <div id="signin-error-container" style="flex-grow: 1; margin-right: 10px;"></div>
+
+                    <div class="flex-shrink-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+                        <button type="button" id="signin-button" class="btn btn-primary">Вхід</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Вихід</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">Ви дійсно хочете вийти?</div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ні</button>
+                    <a href="?logout" class="btn btn-danger">Так</a>
+                </div>
+            </div>
+        </div>
+    </div>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const signinButton = document.getElementById("signin-button");
+            if (signinButton) {
+                signinButton.addEventListener("click", () => {
+                    const loginInput = document.querySelector('input[name="user-login"]');
+                    const passwordInput = document.querySelector('input[name="user-password"]');
+                    const errorContainer = document.getElementById("signin-error-container");
+
+                    errorContainer.innerHTML = ""; // Очищення
+
+                    // Basic Auth credentials
+                    const credentials = btoa(loginInput.value + ":" + passwordInput.value);
+
+                    fetch("/User/SignIn", {
+                        method: "GET",
+                        headers: { "Authorization": "Basic " + credentials }
+                    })
+                    .then(r => r.json())
+                    .then(j => {
+                        if (j.status === 200) {
+                            window.location.reload();
+                        } else {
+                            // Відображення помилки через Bootstrap Alert
+                            errorContainer.innerHTML = `
+                                <div class="alert alert-danger py-1 px-2 m-0 small fade show" role="alert">
+                                    <i class="bi bi-exclamation-triangle-fill"></i> ${j.data}
+                                </div>
+                            `;
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Помилка запиту:", err);
+                    });
+                });
+            }
+        });
+    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

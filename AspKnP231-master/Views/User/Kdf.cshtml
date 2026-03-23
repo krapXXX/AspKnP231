@@ -1,0 +1,51 @@
+﻿@model AspKnP231.Models.User.KdfViewModel
+@{
+    ViewData["Title"] = "DK Calculator";
+}
+
+<div class="container mt-4">
+    <h2>Derived Key (DK) Calculator</h2>
+    <hr />
+
+    <div class="row">
+        <div class="col-md-6">
+            <form asp-action="Kdf" method="post" class="border p-4 shadow-sm rounded bg-light">
+                <div class="form-group mb-3">
+                    <label class="form-label">Password</label>
+                    <input asp-for="Password" type="text" class="form-control" placeholder="Enter password..." required />
+                </div>
+
+                <div class="form-group mb-3">
+                    <label class="form-label">Salt</label>
+                    <div class="input-group">
+                        <input asp-for="Salt" id="salt-input" class="form-control" placeholder="Enter salt..." required />
+                        <button type="button" class="btn btn-outline-secondary" onclick="generateSalt()">
+                            <i class="bi bi-gear-fill"></i> Generate
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">Calculate</button>
+            </form>
+
+            @if (!string.IsNullOrEmpty(Model.DerivedKey))
+            {
+                <div class="alert alert-info mt-4">
+                    <strong>Resulting Derived Key:</strong>
+                    <div class="text-break mt-2">
+                        <code>@Model.DerivedKey</code>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function generateSalt() {
+            const randomSalt = self.crypto.randomUUID();
+            document.getElementById('salt-input').value = randomSalt;
+        }
+    </script>
+}

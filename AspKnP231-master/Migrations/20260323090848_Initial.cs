@@ -14,6 +14,23 @@ namespace AspKnP231.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "ShopSections",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ParentId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Slug = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ShopSections", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "UserRoles",
                 columns: table => new
                 {
@@ -56,7 +73,8 @@ namespace AspKnP231.Migrations
                     Salt = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Dk = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    AvatarFilename = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -91,8 +109,8 @@ namespace AspKnP231.Migrations
 
             migrationBuilder.InsertData(
                 table: "UserAccesses",
-                columns: new[] { "Id", "CreatedAt", "DeletedAt", "Dk", "Login", "Salt", "UserId", "UserRoleId" },
-                values: new object[] { new Guid("f749f994-af12-4ea1-8bef-829ef751fc4a"), new DateTime(2026, 3, 12, 0, 0, 0, 0, DateTimeKind.Unspecified), null, "4E455301C8628F110EADAB21A780FF766CFE0B95", "DefaultAdministrator", "380B5CB5-1578-49A2-BCAF-4A1CA8AA9BC2", new Guid("ae3a3665-8f44-4a2c-95a4-8bbccba7c80d"), new Guid("250fa2d3-0818-42d6-a1ed-112f115407d6") });
+                columns: new[] { "Id", "AvatarFilename", "CreatedAt", "DeletedAt", "Dk", "Login", "Salt", "UserId", "UserRoleId" },
+                values: new object[] { new Guid("f749f994-af12-4ea1-8bef-829ef751fc4a"), null, new DateTime(2026, 3, 12, 0, 0, 0, 0, DateTimeKind.Unspecified), null, "4E455301C8628F110EADAB21A780FF766CFE0B95", "DefaultAdministrator", "380B5CB5-1578-49A2-BCAF-4A1CA8AA9BC2", new Guid("ae3a3665-8f44-4a2c-95a4-8bbccba7c80d"), new Guid("250fa2d3-0818-42d6-a1ed-112f115407d6") });
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserAccesses_Login",
@@ -114,6 +132,9 @@ namespace AspKnP231.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "ShopSections");
+
             migrationBuilder.DropTable(
                 name: "UserAccesses");
 

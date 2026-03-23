@@ -29,16 +29,22 @@ namespace AspKnP231.Middleware.Auth.Session
                     // Слід перейти на універсальні інтерфейси - System.Security.Claims
 
                     context.User = new ClaimsPrincipal(
-                        new ClaimsIdentity(
-                        [
-                            new Claim(ClaimTypes.Name, userAccess.UserData.Name),
-                            new Claim(ClaimTypes.Email, userAccess.UserData.Email),
-                            new Claim(ClaimTypes.NameIdentifier, userAccess.Login),
-                            new Claim(ClaimTypes.Thumbprint, userAccess.AvatarFilename ?? ""),
-                            new Claim(ClaimTypes.DateOfBirth, userAccess.UserData.Birthdate.ToShortDateString()),
-                        ],
-                        nameof(AuthSessionMiddleware)
-                    ));
+     new ClaimsIdentity(
+         [
+             new Claim(ClaimTypes.Name, userAccess.UserData.Name),
+            new Claim(ClaimTypes.Email, userAccess.UserData.Email),
+            new Claim(ClaimTypes.NameIdentifier, userAccess.Login),
+            new Claim(ClaimTypes.Thumbprint, userAccess.AvatarFilename ?? ""),
+            new Claim(ClaimTypes.DateOfBirth, userAccess.UserData.Birthdate.ToShortDateString()),
+            new Claim(ClaimTypes.Role,
+                userAccess.UserRoleId == Guid.Parse("250FA2D3-0818-42D6-A1ED-112F115407D6")
+                    ? "Admin"
+                    : "Guest"
+            )
+         ],
+         nameof(AuthSessionMiddleware)
+     )
+ );
                 }
             }
             await _next(context);

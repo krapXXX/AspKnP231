@@ -26,7 +26,7 @@ namespace AspKnP231.Data
                 .HasOne(a => a.UserData)                // визначенням ключів поєднання якщо: один з них Id або TableId
                 .WithMany(d => d.UserAccesses)          // інший - TableId (UserDataId), оскільки останнє порушується
                 .HasForeignKey(a => a.UserId);          // необхідно прямо зазначити ключ
-                // .HasPrincipalKey(d => d.Id)          // інший - за правилом, можна не зазначати
+                                                        // .HasPrincipalKey(d => d.Id)          // інший - за правилом, можна не зазначати
 
             modelBuilder.Entity<Entities.UserAccess>()  // Іменування усіх ключів - за правилом, можна не зазначати,
                 .HasOne(a => a.UserRole)                // За відсутності інверсної властивості WithMany()
@@ -76,7 +76,7 @@ namespace AspKnP231.Data
                     Login = "DefaultAdministrator",
                     Salt = "380B5CB5-1578-49A2-BCAF-4A1CA8AA9BC2",
                     CreatedAt = new DateTime(2026, 3, 12),
-                    Dk = "4E455301C8628F110EADAB21A780FF766CFE0B95"
+                    Dk = "4E455301C8628F110EADAB21A780FF766CFE0B95"   // A946A088
                 });
         }
 

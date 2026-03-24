@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AspKnP231.Data.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace AspKnP231.Data
 {
@@ -10,7 +11,7 @@ namespace AspKnP231.Data
 
         public DbSet<Entities.UserRole> UserRoles { get; set; }
         public DbSet<Entities.ShopSection> ShopSections { get; set; }
-
+        public DbSet<Entities.ShopProduct> ShopProducts { get; set; }
         public DataContext(DbContextOptions options) : base(options) { }
 
 
@@ -33,7 +34,19 @@ namespace AspKnP231.Data
                 .WithMany();                            // лишається порожнім
                                                         // .HasForeignKey(a => a.UserRoleId)
                                                         // .HasPrincipalKey(r => r.Id);
+            modelBuilder.Entity<Entities.ShopSection>()
+                          .HasIndex(s => s.Slug)
+                          .IsUnique();
 
+            modelBuilder.Entity<Entities.ShopProduct>()
+                .HasIndex(p => p.Slug)
+                .IsUnique();
+
+            modelBuilder.Entity<Entities.ShopProduct>()
+                .HasOne(p => p.Section)
+                .WithMany(s => s.Products)
+                .HasPrincipalKey(s => s.Id)
+                .HasForeignKey(p => p.ShopSectionId);
             // б) початкові дані
             modelBuilder.Entity<Entities.UserRole>().HasData(
                 new Entities.UserRole

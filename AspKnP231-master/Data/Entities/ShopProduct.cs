@@ -1,24 +1,27 @@
-﻿
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace AspKnP231.Data.Entities
 {
-    public class ShopProduct
+    public record ShopProduct
     {
         public Guid Id { get; set; }
 
-        public Guid? CategoryId { get; set; }
+        public Guid ShopSectionId { get; set; }
 
         public String Title { get; set; } = null!;
 
-        public String Description { get; set; }
+        public String? Description { get; set; } = null!;
 
-        public String Slug { get; set; }
-        public int Price { get; set; }
-        public int Discount { get; set; }
-        public double? Rating  { get; set; }
-        public int Stock  { get; set; }
+        public String? Slug { get; set; } = null!;
 
-        public String ImageUrl { get; set; } = null!;
+        public String? ImageUrl { get; set; } = null!;
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal Price { get; set; }
+        public int Stock { get; set; }
         public DateTime? DeletedAt { get; set; }
+        [JsonIgnore]
+        public ShopSection Section { get; set; } = null!;
     }
 }

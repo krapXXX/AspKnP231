@@ -36,6 +36,11 @@ builder.Services.AddDbContext<DataContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("MainDb")));
 
+builder.Services.AddCors(options =>
+    options.AddDefaultPolicy(policy =>
+        policy.AllowAnyOrigin()
+));
+
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
@@ -51,6 +56,7 @@ if (!app.Environment.IsDevelopment())
 }
 app.UseHttpsRedirection();
 app.UseRouting();
+app.UseCors();
 app.UseAuthorization();
 app.MapStaticAssets();
 app.UseSession();       // Включення сесій https://learn.microsoft.com/en-us/aspnet/core/fundamentals/app-state

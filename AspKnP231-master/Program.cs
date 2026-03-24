@@ -54,7 +54,17 @@ app.UseRouting();
 app.UseAuthorization();
 app.MapStaticAssets();
 app.UseSession();       // Включення сесій https://learn.microsoft.com/en-us/aspnet/core/fundamentals/app-state
-
+app.Use(async (context, next) =>
+{
+    if (context.Request.Query.ContainsKey("logout"))
+    {
+        context.Session.Remove("UserAccess");
+        string path = context.Request.Path;
+        context.Response.Redirect(path);
+        return; 
+    }
+    await next(); 
+});
 // Місце для обробників користувача (Custom Middlewares)
 // порядок оголошення відповідає за порядок зв'язування (послідовності next())
 // тому порядок важливо дотримуватись, якщо один обробник залежить від інших

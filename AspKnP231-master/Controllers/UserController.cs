@@ -4,13 +4,13 @@ using AspKnP231.Models.Home;
 using AspKnP231.Models.User;
 using AspKnP231.Services.Kdf;
 using AspKnP231.Services.Storage;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
 using System.Buffers.Text;
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions; // Added for password complexity check
 
 namespace AspKnP231.Controllers
 {
@@ -22,6 +22,15 @@ namespace AspKnP231.Controllers
 
         public IActionResult Index()
         {
+            ViewData["JwtModel"] = new JwtModel
+            {
+                Payload = new()
+                {
+                    Name = "User",
+                    Email = "user@i.ua",
+                    Dob = "2020-02-02",
+                }
+            };
             return View();
         }
 
@@ -33,6 +42,112 @@ namespace AspKnP231.Controllers
                 return View();
             }
             return Redirect("/");
+        }
+
+        public JsonResult TestAuth()
+        {
+            String authHeader = Request.Headers.Authorization.ToString();
+            if (String.IsNullOrEmpty(authHeader))
+            {
+                return Json(new
+                {
+                    status = 401,
+                    data = "Missing 'Authorization' header"
+                });
+            }
+            String scheme = "Bearer ";
+            if (!authHeader.StartsWith(scheme))
+            {
+                return Json(new
+                {
+                    status = 401,
+                    data = "Invalid 'Authorization' scheme. Must be " + scheme
+                });
+            }
+            String token = authHeader[scheme.Length..];
+            // Валідація токена за https://datatracker.ietf.org/doc/html/rfc7519#section-7.2
+            int dotPosition = token.IndexOf('.');
+            if (dotPosition == -1)
+            {
+                return Json(new
+                {
+                    status = 401,
+                    data = "The JWT must contain at least one period ('.') character "
+                });
+            }
+            String header = token[..dotPosition];
+
+            // Base64url decode the Encoded JOSE Header following the
+            // restriction that no line breaks, whitespace, or other additional
+            // characters have been used. Verify that the resulting octet sequence is a UTF-8-encoded...
+            String decodedHeader;
+            try
+            {
+                decodedHeader = Encoding.UTF8.GetString(Base64UrlTextEncoder.Decode(header));
+            }
+            catch
+            {
+                return Json(new
+                {
+                    status = 401,
+                    data = "The JWT header decode error "
+                });
+            }
+
+            // 
+            JwtHeader jwtHeader;
+            try
+            {
+                jwtHeader = JsonSerializer.Deserialize<JwtHeader>(decodedHeader, JwtModel.options)!;
+            }
+            catch
+            {
+                return Json(new
+                {
+                    status = 401,
+                    data = "The JWT header must carry valid JSON"
+                });
+            }
+            if (jwtHeader.Typ != "JWT")
+            {
+                return Json(new
+                {
+                    status = 401,
+                    data = "The JWT header.typ unsupported: 'JWT' only"
+                });
+            }
+            if (jwtHeader.Alg != "HS256")
+            {
+                return Json(new
+                {
+                    status = 401,
+                    data = "The JWT header.alg unsupported: 'HS256' only"
+                });
+            }
+
+            // Відокремлюємо підпис та підписану частину
+            dotPosition = token.LastIndexOf('.');
+            String signedPart = token[..dotPosition];
+            String signature = token[(dotPosition + 1)..];
+            String jwtSignature = JwtModel.Sign64(signedPart);
+            if (jwtSignature != signature)
+            {
+                return Json(new
+                {
+                    status = 401,
+                    data = "Signature error",
+                    signature,
+                    jwtSignature
+                });
+            }
+
+            return Json(new
+            {
+                status = 200,
+                data = decodedHeader,
+                signedPart,
+                signature
+            });
         }
 
         public IActionResult SignUp()
@@ -103,24 +218,6 @@ namespace AspKnP231.Controllers
             {
                 ModelState.AddModelError("user-birthdate", "Вік замалий для реєстрації");
             }
-
-            // --- ПЕРЕВІРКА ПАРОЛЯ НА НАДІЙНІСТЬ ---
-            if (!string.IsNullOrEmpty(formModel.UserPassword))
-            {
-                // 1. Довжина щонайменше 6 символів
-                if (formModel.UserPassword.Length < 6)
-                {
-                    ModelState.AddModelError("user-password", "Пароль має бути не менше 6 символів");
-                }
-                // 2. Містить цифру, малу літеру, велику літеру та спецсимвол
-                // Використовуємо регулярний вираз для перевірки всіх умов одночасно
-                bool isStrong = Regex.IsMatch(formModel.UserPassword, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$");
-                if (!isStrong)
-                {
-                    ModelState.AddModelError("user-password", "Пароль повинен містити цифру, малу та велику літери, а також спецсимвол");
-                }
-            }
-
             // Валідація паролю - ДЗ
             if (formModel.UserPassword != formModel.UserRepeat)
             {
@@ -135,24 +232,16 @@ namespace AspKnP231.Controllers
                 }
             }
 
-            if (formModel.UserAvatar != null && formModel.UserAvatar.Length > 0)
+            if (ModelState.IsValid && formModel.UserAvatar != null && formModel.UserAvatar.Length > 0)
             {
                 /* Д.З. Забезпечити валідацію файлу-аватарки
-                 * на предмет того, що його розширення відповідає графічним файлам.
+                 * на предмет того, що його розширення відповідає
+                 * графічним файлам. Перелік узгодити з вибором MIME 
+                 * типів у контролері Storage.
+                 * Якщо файл має неприпустимий тип, то додавати 
+                 * помилку валідації даного поля та виводити її на формі.
                  */
-                string[] allowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-                string fileExtension = Path.GetExtension(formModel.UserAvatar.FileName).ToLower();
-
-                if (!allowedExtensions.Contains(fileExtension))
-                {
-                    ModelState.AddModelError("user-avatar", "Неприпустимий тип файлу. Дозволені формати: jpg, jpeg, png, gif, webp");
-                }
-
-                // Якщо модель все ще валідна, зберігаємо файл
-                if (ModelState.IsValid)
-                {
-                    formModel.SavedFilename = _storageService.Save(formModel.UserAvatar);
-                }
+                formModel.SavedFilename = _storageService.Save(formModel.UserAvatar);
             }
 
             HttpContext.Session.SetString(
@@ -168,7 +257,7 @@ namespace AspKnP231.Controllers
         }
 
         [HttpGet]
-        public JsonResult SignIn()
+        public JsonResult SignIn([FromRoute] String? id)   // id - з патерну у Program.cs
         {
             // Basic authentication
             String authHeader = Request.Headers.Authorization.ToString();
@@ -237,29 +326,56 @@ namespace AspKnP231.Controllers
                 });
             }
 
-            HttpContext.Session.SetString("UserAccess", JsonSerializer.Serialize(userAccess));
-
-            return Json(new
+            if (id == "jwt")
             {
-                status = 200,
-                data = "OK"
-            });
-        }
-
-        [HttpGet]
-        public IActionResult Kdf()
-        {
-            return View(new KdfViewModel());
-        }
-
-        [HttpPost]
-        public IActionResult Kdf(KdfViewModel model)
-        {
-            if (!string.IsNullOrEmpty(model.Password) && !string.IsNullOrEmpty(model.Salt))
-            {
-                model.DerivedKey = _kdfService.Dk(model.Salt, model.Password);
+                return Json(new
+                {
+                    status = 200,
+                    data = new JwtModel
+                    {
+                        Payload = new()
+                        {
+                            Name = userAccess.UserData.Name,
+                            Email = userAccess.UserData.Email,
+                            Aud = userAccess.UserRoleId == Guid.Parse("250FA2D3-0818-42D6-A1ED-112F115407D6")
+                                ? "Admin"
+                                : "Guest",
+                            Sub = userAccess.Login,
+                            Dob = userAccess.UserData.Birthdate.ToShortDateString(),
+                            Iat = DateTime.Now.Ticks,
+                            Ava = _storageService.GetPathPrefix() + userAccess.AvatarFilename,
+                            Exp = DateTime.Now.AddMinutes(10).Ticks,
+                            Jti = userAccess.Id.ToString(),
+                        }
+                    }.ToString()
+                });
             }
-            return View(model);
+            else
+            {
+                HttpContext.Session.SetString("UserAccess", JsonSerializer.Serialize(userAccess));
+                return Json(new
+                {
+                    status = 200,
+                    data = "OK"
+                });
+            }
+
+
+            /* Авторизація. Збереження результатів автентифікації.
+             * За успішними результатами автентифікації у сесії зберігається
+             * інформація про вхід.
+             * У майбутніх запитах цю інформацію слід відновлювати
+             * та приймати рішення щодо авторизації
+             */
         }
     }
 }
+/* Д.З. Реалізувати стилізацію посилання переходу на 
+ * сторінку профілю користувача в залежності від 
+ * наявності/відсутності картинки-аватарки.
+ * Додати підтвердження виходу з авторизованого 
+ * режиму окремим модальним діалогом
+ * [Ви виходите з системи
+ *  Підтвержуєте
+ *  Так   Ні      ]
+ */

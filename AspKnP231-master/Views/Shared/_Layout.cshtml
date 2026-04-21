@@ -1,10 +1,10 @@
-﻿@using AspKnP231.Data.Entities
+﻿﻿@using AspKnP231.Data.Entities
 @using System.Security.Claims
 @{
     // Перевіряємо наявність авторизації
     bool isAuthorized =
         Context.User.Identity?.IsAuthenticated ?? false;
-    String? userAvatar = isAuthorized
+    String? userAvatar = isAuthorized 
         ? Context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Thumbprint)?.Value
         : null;
     String? userName = isAuthorized
@@ -19,7 +19,7 @@
     <title>@ViewData["Title"] - AspKnP231</title>
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"/>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/AspKnP231.styles.css" asp-append-version="true" />
 </head>
@@ -58,8 +58,14 @@
                         <li class="nav-item" title="Робота з формами">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Forms"><i class="bi bi-card-checklist header-icon"></i></a>
                         </li>
+                        <li class="nav-item" title="Обмін ресурсами. CORS/CORP.">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Cors"><i class="bi bi-arrow-left-right header-icon"></i></a>
+                        </li>
                         <li class="nav-item" title="Крамниця">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Shop" asp-action="Index"><i class="bi bi-bag-check header-icon"></i></a>
+                        </li>
+                        <li class="nav-item" title="Автентифікація та авторизація.">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="User" asp-action="Index"><i class="bi bi-box-arrow-in-right header-icon"></i></a>
                         </li>
                     </ul>
 
@@ -68,30 +74,17 @@
                         <div>
                             <a asp-controller="User" asp-action="Profile"
                                title="Кабінет користувача"
-                               class="btn btn-outline-secondary d-flex align-items-center justify-content-center me-2"
-                               style="width: 42px; height: 42px; padding: 0; border-radius: 50%;">
-
-                                @if (string.IsNullOrEmpty(userAvatar))
+                               class="btn btn-outline-secondary">
+                                @if (String.IsNullOrEmpty(userAvatar))
                                 {
-                                    @* Варіант БЕЗ аватарки: перша літера імені або стандартна іконка *@
-                                    <i class="bi bi-person-fill" style="font-size: 1.2rem;"></i>
+                                     <span>@(((userName ?? "").Length > 0) ? userName![0] : 'P')</span>
                                 }
                                 else
                                 {
-                                    @* Варіант З аватаркою: кругле фото *@
-                                    <img src="/Storage/Item/@userAvatar"
-                                         alt="Avatar"
-                                         class="rounded-circle"
-                                         style="width: 100%; height: 100%; object-fit: cover;" />
+                                    <img src="/Storage/Item/@userAvatar" alt="Ava" style="max-width: 30px; max-height: 30px" />
                                 }
                             </a>
-                            <button type="button"
-                                    title="Вихід"
-                                    class="btn btn-outline-danger"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#logoutModal">
-                                <i class="bi bi-box-arrow-right"></i>
-                            </button>
+
                             <a href="?logout"
                                title="Вихід з авторизованого режиму"
                                class="btn btn-outline-secondary"><i class="bi bi-box-arrow-right"></i></a>
@@ -110,7 +103,7 @@
                                title="Реєстрація нового користувача"
                                class="btn btn-outline-secondary"><i class="bi bi-person-add"></i></a>
                         </div>
-                    }
+                    }                        
 
                 </div>
             </div>
@@ -128,7 +121,7 @@
         </div>
     </footer>
 
-
+    
 
     <!-- Auth Modal -->
     <div class="modal fade" id="authModal" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true">
@@ -149,94 +142,20 @@
                             <span class="input-group-text" id="user-password-addon"><i class="bi bi-lock"></i></span>
                             <input type="password" class="form-control" name="user-password"
                                    placeholder="Password" aria-label="Password" aria-describedby="user-password-addon" />
-                        </div>
+                        </div>                       
                     </form>
                 </div>
-                <div class="modal-footer d-flex justify-content-between align-items-center">
-                    <div id="signin-error-container" style="flex-grow: 1; margin-right: 10px;"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+                    <button form="auth-form" type="submit" class="btn btn-primary">Вхід</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                    <div class="flex-shrink-0">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
-                        <button type="button" id="signin-button" class="btn btn-primary">Вхід</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-sm">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Вихід</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body text-center">Ви дійсно хочете вийти?</div>
-                <div class="modal-footer justify-content-center">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ні</button>
-                    <a href="?logout" class="btn btn-danger">Так</a>
-                </div>
-            </div>
-        </div>
-    </div>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const signinButton = document.getElementById("signin-button");
-            if (signinButton) {
-                signinButton.addEventListener("click", () => {
-                    const loginInput = document.querySelector('input[name="user-login"]');
-                    const passwordInput = document.querySelector('input[name="user-password"]');
-                    const errorContainer = document.getElementById("signin-error-container");
-
-                    errorContainer.innerHTML = ""; // Очищення
-
-                    // Basic Auth credentials
-                    const credentials = btoa(loginInput.value + ":" + passwordInput.value);
-
-                    fetch("/User/SignIn", {
-                        method: "GET",
-                        headers: { "Authorization": "Basic " + credentials }
-                    })
-                    .then(r => r.json())
-                    .then(j => {
-                        if (j.status === 200) {
-                            window.location.reload();
-                        } else {
-                            // Відображення помилки через Bootstrap Alert
-                            errorContainer.innerHTML = `
-                                <div class="alert alert-danger py-1 px-2 m-0 small fade show" role="alert">
-                                    <i class="bi bi-exclamation-triangle-fill"></i> ${j.data}
-                                </div>
-                            `;
-                        }
-                    })
-                    .catch(err => {
-                        console.error("Помилка запиту:", err);
-                    });
-                });
-            }
-        });
-    </script>
     @await RenderSectionAsync("Scripts", required: false)
-    <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content">
-                <div class="modal-header bg-light">
-                    <h5 class="modal-title" id="logoutModalLabel">Вихід з системи</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <p class="mb-0">Ви дійсно бажаєте вийти з облікового запису?</p>
-                    <small class="text-muted">Підтвердіть дію</small>
-                </div>
-                <div class="modal-footer d-flex justify-content-center">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ні</button>
-                    <a href="?logout" class="btn btn-danger">Так</a>
-                </div>
-            </div>
-        </div>
-    </div>
 </body>
 </html>

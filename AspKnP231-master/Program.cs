@@ -1,12 +1,11 @@
-using AspKnP231.Data;
-using AspKnP231.Middleware.Auth.Session;
-using AspKnP231.Middleware.Demo;
-using AspKnP231.Services.DateTime;
 using AspKnP231.Services.Hash;
-using AspKnP231.Services.Kdf;
+using AspKnP231.Middleware.Demo;
 using AspKnP231.Services.Scoped;
+using AspKnP231.Services.Kdf;
 using AspKnP231.Services.Storage;
+using AspKnP231.Data;
 using Microsoft.EntityFrameworkCore;
+using AspKnP231.Middleware.Auth.Session;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +20,6 @@ builder.Services.AddKdf();
 builder.Services.AddStorage();
 
 builder.Services.AddScoped<ScopedService>();    // без інтерфейсу - тільки один параметр типу
-builder.Services.AddScoped<IDateTimeService, NationalDateTimeService>();
 
 builder.Services.AddDistributedMemoryCache();          // Налаштування сесій
 builder.Services.AddSession(options =>                 // https://learn.microsoft.com/en-us/aspnet/core/fundamentals/app-state
@@ -36,17 +34,41 @@ builder.Services.AddDbContext<DataContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("MainDb")));
 
+
+var corsPolicy = builder.Configuration["Cors:Policy"] ?? "Open";
+
 builder.Services.AddCors(options =>
-    options.AddDefaultPolicy(policy =>
-        policy.AllowAnyOrigin()
-));
+{
+    options.AddPolicy("Open", policy =>
+        policy
+            .AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod());
+
+    options.AddPolicy("FrontendOnly", policy =>
+        policy
+            .WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod());
+
+    options.AddPolicy("FrontendWithCredentials", policy =>
+        policy
+            .WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials());
+});
+
+builder.Services.AddHttpContextAccessor();   // для доступу до HttpContext у сервісах (поза контролерами)
 
 var app = builder.Build();
+
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<DataContext>();
     db.Database.Migrate();
 }
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -56,21 +78,11 @@ if (!app.Environment.IsDevelopment())
 }
 app.UseHttpsRedirection();
 app.UseRouting();
-app.UseCors();
+app.UseCors(corsPolicy);
 app.UseAuthorization();
 app.MapStaticAssets();
 app.UseSession();       // Включення сесій https://learn.microsoft.com/en-us/aspnet/core/fundamentals/app-state
-app.Use(async (context, next) =>
-{
-    if (context.Request.Query.ContainsKey("logout"))
-    {
-        context.Session.Remove("UserAccess");
-        string path = context.Request.Path;
-        context.Response.Redirect(path);
-        return; 
-    }
-    await next(); 
-});
+
 // Місце для обробників користувача (Custom Middlewares)
 // порядок оголошення відповідає за порядок зв'язування (послідовності next())
 // тому порядок важливо дотримуватись, якщо один обробник залежить від інших
@@ -87,8 +99,7 @@ app.MapControllerRoute(
 
 app.Run();
 
-/* Д.З. Створити сторінку для обчислення DK *Derived Key*
- * Користувач вводить сіль та пароль, натискає кнопку "обчислити"
- * і одержує результат.
- * ** Додати режим автоматичної герерації солі
+/* Д.З. Створити декілька іменованих політик CORS
+ * Реалізувати підключення однієї з них у відповідності
+ * до налаштувань.
  */
